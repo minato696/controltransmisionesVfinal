@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, addDays, isWithinInterval, isSameDay } from 'date-fns';
+import { startOfWeek, endOfWeek, addWeeks, subWeeks, addDays, isWithinInterval, isSameDay } from 'date-fns';
+import { toZonedTime, format as formatTz } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
+import { TIMEZONE, getFechaActualPeru } from './constants';
 
 interface SelectorSemanasProps {
   fechaInicio: Date;
@@ -21,29 +23,41 @@ const SelectorSemanasMejorado: React.FC<SelectorSemanasProps> = ({
   const [mostrarOpciones, setMostrarOpciones] = useState(false);
   const [seleccionandoRango, setSeleccionandoRango] = useState(false);
   const [fechaInicioTemp, setFechaInicioTemp] = useState<Date | null>(null);
-  const [mesCurrent, setMesCurrent] = useState<Date>(new Date());
+  const [mesCurrent, setMesCurrent] = useState<Date>(getFechaActualPeru());
   
   const calendarRef = useRef<HTMLDivElement>(null);
   const opcionesRef = useRef<HTMLDivElement>(null);
 
-  // Formatear fechas para mostrar
+  // Logging para debug con zona horaria de Perú
+  useEffect(() => {
+    const fechaInicioPeru = toZonedTime(fechaInicio, TIMEZONE);
+    const fechaFinPeru = toZonedTime(fechaFin, TIMEZONE);
+    
+    console.log('SelectorSemanasMejorado - fechaInicio (Perú):', formatTz(fechaInicioPeru, 'yyyy-MM-dd HH:mm:ss', { timeZone: TIMEZONE }));
+    console.log('SelectorSemanasMejorado - fechaFin (Perú):', formatTz(fechaFinPeru, 'yyyy-MM-dd HH:mm:ss', { timeZone: TIMEZONE }));
+  }, [fechaInicio, fechaFin]);
+
+  // Formatear fechas para mostrar (usando zona horaria de Perú)
   const formatoFecha = (fecha: Date) => {
-    return format(fecha, 'dd/MM/yyyy', { locale: es });
+    return formatTz(fecha, 'dd/MM/yyyy', { timeZone: TIMEZONE, locale: es });
   };
 
   const formatoFechaCorto = (fecha: Date) => {
-    return format(fecha, 'dd/MM', { locale: es });
+    return formatTz(fecha, 'dd/MM', { timeZone: TIMEZONE, locale: es });
   };
 
   // Mostrar el texto de rango según el modo
   const obtenerTextoRango = () => {
+    const fechaInicioPeru = toZonedTime(fechaInicio, TIMEZONE);
+    const fechaFinPeru = toZonedTime(fechaFin, TIMEZONE);
+    
     switch (modoSeleccion) {
       case 'semana':
-        return `${formatoFecha(fechaInicio)} - ${formatoFecha(fechaFin)}`;
+        return `${formatoFecha(fechaInicioPeru)} - ${formatoFecha(fechaFinPeru)}`;
       case 'dia':
-        return formatoFecha(fechaInicio);
+        return formatoFecha(fechaInicioPeru);
       case 'rango':
-        return `${formatoFecha(fechaInicio)} - ${formatoFecha(fechaFin)}`;
+        return `${formatoFecha(fechaInicioPeru)} - ${formatoFecha(fechaFinPeru)}`;
       default:
         return '';
     }
@@ -56,6 +70,14 @@ const SelectorSemanasMejorado: React.FC<SelectorSemanasProps> = ({
         ? subWeeks(fechaInicio, 1)
         : addWeeks(fechaInicio, 1);
       const nuevaFechaFin = endOfWeek(nuevaFechaInicio, { weekStartsOn: 1 });
+      
+      const fechaInicioPeru = toZonedTime(nuevaFechaInicio, TIMEZONE);
+      const fechaFinPeru = toZonedTime(nuevaFechaFin, TIMEZONE);
+      
+      console.log('Cambiando semana (Perú):', 
+                 formatTz(fechaInicioPeru, 'yyyy-MM-dd', { timeZone: TIMEZONE }),
+                 formatTz(fechaFinPeru, 'yyyy-MM-dd', { timeZone: TIMEZONE }));
+      
       onFechasChange(nuevaFechaInicio, nuevaFechaFin);
     } else if (modoSeleccion === 'dia') {
       const nuevaFecha = direccion === 'anterior'
@@ -77,10 +99,16 @@ const SelectorSemanasMejorado: React.FC<SelectorSemanasProps> = ({
 
   // Ir al día actual
   const irAHoy = () => {
-    const hoy = new Date();
+    const hoy = getFechaActualPeru();
+    console.log('Ir a hoy, fecha actual (Perú):', formatTz(hoy, 'yyyy-MM-dd HH:mm:ss', { timeZone: TIMEZONE }));
+    
     if (modoSeleccion === 'semana') {
       const inicio = startOfWeek(hoy, { weekStartsOn: 1 });
       const fin = endOfWeek(hoy, { weekStartsOn: 1 });
+      
+      console.log('Inicio de semana (Perú):', formatTz(inicio, 'yyyy-MM-dd', { timeZone: TIMEZONE }));
+      console.log('Fin de semana (Perú):', formatTz(fin, 'yyyy-MM-dd', { timeZone: TIMEZONE }));
+      
       onFechasChange(inicio, fin);
     } else if (modoSeleccion === 'dia') {
       onFechasChange(hoy, hoy);
@@ -115,8 +143,9 @@ const SelectorSemanasMejorado: React.FC<SelectorSemanasProps> = ({
 
   // Generar días para el calendario
   const generarCalendario = () => {
-    const año = mesCurrent.getFullYear();
-    const mes = mesCurrent.getMonth();
+    const mesCurrentPeru = toZonedTime(mesCurrent, TIMEZONE);
+    const año = mesCurrentPeru.getFullYear();
+    const mes = mesCurrentPeru.getMonth();
     
     // Primer día del mes
     const primerDia = new Date(año, mes, 1);
@@ -130,6 +159,9 @@ const SelectorSemanasMejorado: React.FC<SelectorSemanasProps> = ({
     // Dias de la semana para encabezados
     const diasSemana = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
     
+    // Fecha actual en zona horaria de Perú para comparar
+    const hoy = getFechaActualPeru();
+    
     // Generar array de días
     const dias = [];
     
@@ -139,7 +171,7 @@ const SelectorSemanasMejorado: React.FC<SelectorSemanasProps> = ({
       dias.push({
         fecha: dia,
         esMesActual: false,
-        esHoy: isSameDay(dia, new Date()),
+        esHoy: isSameDay(dia, hoy),
         estaSeleccionado: esSeleccionado(dia),
         estaEnRango: estaEnRangoSeleccionado(dia)
       });
@@ -151,21 +183,21 @@ const SelectorSemanasMejorado: React.FC<SelectorSemanasProps> = ({
       dias.push({
         fecha: dia,
         esMesActual: true,
-        esHoy: isSameDay(dia, new Date()),
+        esHoy: isSameDay(dia, hoy),
         estaSeleccionado: esSeleccionado(dia),
         estaEnRango: estaEnRangoSeleccionado(dia)
       });
     }
     
     // Agregar días del mes siguiente para completar la última semana
-const diasRestantes = 7 - (dias.length % 7);
-if (diasRestantes < 7) {
-  for (let i = 1; i <= diasRestantes; i++) {
-    const dia = new Date(año, mes + 1, i);
+    const diasRestantes = 7 - (dias.length % 7);
+    if (diasRestantes < 7) {
+      for (let i = 1; i <= diasRestantes; i++) {
+        const dia = new Date(año, mes + 1, i);
         dias.push({
           fecha: dia,
           esMesActual: false,
-          esHoy: isSameDay(dia, new Date()),
+          esHoy: isSameDay(dia, hoy),
           estaSeleccionado: esSeleccionado(dia),
           estaEnRango: estaEnRangoSeleccionado(dia)
         });
@@ -177,10 +209,14 @@ if (diasRestantes < 7) {
 
   // Verificar si una fecha está seleccionada
   const esSeleccionado = (fecha: Date): boolean => {
+    const fechaPeru = toZonedTime(fecha, TIMEZONE);
+    const fechaInicioPeru = toZonedTime(fechaInicio, TIMEZONE);
+    const fechaFinPeru = toZonedTime(fechaFin, TIMEZONE);
+    
     if (modoSeleccion === 'dia') {
-      return isSameDay(fecha, fechaInicio);
+      return isSameDay(fechaPeru, fechaInicioPeru);
     } else if (modoSeleccion === 'semana' || modoSeleccion === 'rango') {
-      return isSameDay(fecha, fechaInicio) || isSameDay(fecha, fechaFin);
+      return isSameDay(fechaPeru, fechaInicioPeru) || isSameDay(fechaPeru, fechaFinPeru);
     }
     return false;
   };
@@ -192,8 +228,14 @@ if (diasRestantes < 7) {
     }
     
     try {
-      return isWithinInterval(fecha, { start: fechaInicio, end: fechaFin }) &&
-        !isSameDay(fecha, fechaInicio) && !isSameDay(fecha, fechaFin);
+      const fechaPeru = toZonedTime(fecha, TIMEZONE);
+      const fechaInicioPeru = toZonedTime(fechaInicio, TIMEZONE);
+      const fechaFinPeru = toZonedTime(fechaFin, TIMEZONE);
+      
+      return isWithinInterval(fechaPeru, { 
+        start: fechaInicioPeru, 
+        end: fechaFinPeru 
+      }) && !isSameDay(fechaPeru, fechaInicioPeru) && !isSameDay(fechaPeru, fechaFinPeru);
     } catch (e) {
       return false;
     }
@@ -253,7 +295,7 @@ if (diasRestantes < 7) {
   // Generar lista de semanas para selección rápida
   const generarListaSemanas = () => {
     const semanas = [];
-    const hoy = new Date();
+    const hoy = getFechaActualPeru();
     
     // Generar 12 semanas hacia atrás y 12 hacia adelante
     for (let i = -12; i <= 12; i++) {
@@ -261,14 +303,18 @@ if (diasRestantes < 7) {
       const inicioSem = startOfWeek(fecha, { weekStartsOn: 1 });
       const finSem = endOfWeek(fecha, { weekStartsOn: 1 });
       
+      // Convertir a zona horaria de Perú para mostrar
+      const inicioSemPeru = toZonedTime(inicioSem, TIMEZONE);
+      const finSemPeru = toZonedTime(finSem, TIMEZONE);
+      
       semanas.push({
         fechaInicio: inicioSem,
         fechaFin: finSem,
-        texto: `${formatoFechaCorto(inicioSem)} - ${formatoFechaCorto(finSem)}`,
+        texto: `${formatoFechaCorto(inicioSemPeru)} - ${formatoFechaCorto(finSemPeru)}`,
         esSemanaActual: i === 0,
         esSemanaSeleccionada: 
-          format(fechaInicio, 'yyyy-MM-dd') === format(inicioSem, 'yyyy-MM-dd') &&
-          format(fechaFin, 'yyyy-MM-dd') === format(finSem, 'yyyy-MM-dd')
+          isSameDay(toZonedTime(fechaInicio, TIMEZONE), inicioSemPeru) &&
+          isSameDay(toZonedTime(fechaFin, TIMEZONE), finSemPeru)
       });
     }
     
@@ -325,8 +371,8 @@ if (diasRestantes < 7) {
               {obtenerTextoRango()}
             </div>
             <div className="text-xs text-gray-500">
-              {modoSeleccion === 'semana' && `Semana del ${format(fechaInicio, "d 'de' MMMM", { locale: es })}`}
-              {modoSeleccion === 'dia' && `${format(fechaInicio, "EEEE, d 'de' MMMM", { locale: es })}`}
+              {modoSeleccion === 'semana' && `Semana del ${formatTz(toZonedTime(fechaInicio, TIMEZONE), "d 'de' MMMM", { timeZone: TIMEZONE, locale: es })}`}
+              {modoSeleccion === 'dia' && `${formatTz(toZonedTime(fechaInicio, TIMEZONE), "EEEE, d 'de' MMMM", { timeZone: TIMEZONE, locale: es })}`}
               {modoSeleccion === 'rango' && `${Math.ceil((fechaFin.getTime() - fechaInicio.getTime()) / (1000 * 60 * 60 * 24)) + 1} días`}
             </div>
           </div>
@@ -426,7 +472,7 @@ if (diasRestantes < 7) {
             </button>
             
             <div className="font-medium text-gray-800">
-              {format(mesCurrent, 'MMMM yyyy', { locale: es })}
+              {formatTz(toZonedTime(mesCurrent, TIMEZONE), 'MMMM yyyy', { timeZone: TIMEZONE, locale: es })}
             </div>
             
             <button

@@ -1,8 +1,11 @@
 // src/components/transmisiones/constants.ts
 import { DiaSemana } from './types';
 import { startOfWeek, addDays } from 'date-fns';
+import { toZonedTime, format } from 'date-fns-tz';
+import { es } from 'date-fns/locale';
 
-// Ya no necesitamos CIUDADES porque vendrán de la API (filiales)
+// Definir la zona horaria para Perú
+export const TIMEZONE = 'America/Lima';
 
 export const DIAS_SEMANA: DiaSemana[] = [
   { nombre: "Lunes", fecha: "" },
@@ -50,23 +53,36 @@ export const ESTADOS_TRANSMISION = {
   TRANSMITIO_TARDE: 'tarde'
 } as const;
 
+// Función para obtener la fecha actual en la zona horaria de América/Lima
+export const getFechaActualPeru = (): Date => {
+  const now = new Date();
+  return toZonedTime(now, TIMEZONE);
+};
+
 // Función para obtener las fechas de la semana a partir de una fecha dada
-export const obtenerFechasSemana = (fecha: Date = new Date()): DiaSemana[] => {
-  // Obtener el lunes de la semana
-  const lunes = startOfWeek(fecha, { weekStartsOn: 1 });
+export const obtenerFechasSemana = (fecha: Date = getFechaActualPeru()): DiaSemana[] => {
+  // Asegurarnos de trabajar con objetos Date nuevos para evitar mutaciones
+  const fechaPeru = new Date(fecha);
   
-  return DIAS_SEMANA.map((dia, index) => {
-    const fechaDia = addDays(lunes, index);
+  // Obtener el lunes de la semana
+  const lunes = startOfWeek(fechaPeru, { weekStartsOn: 1 });
+  
+  // Generar días de la semana
+  const diasGenerados = DIAS_SEMANA.map((dia, index) => {
+    // Crear un nuevo objeto Date para cada día para evitar referencias compartidas
+    const fechaDia = new Date(lunes);
+    fechaDia.setDate(lunes.getDate() + index);
     
-    const dd = String(fechaDia.getDate()).padStart(2, '0');
-    const mm = String(fechaDia.getMonth() + 1).padStart(2, '0');
-    const yyyy = fechaDia.getFullYear();
+    // Formatear fecha como YYYY-MM-DD
+    const fechaFormateada = format(fechaDia, 'yyyy-MM-dd', { timeZone: TIMEZONE });
     
     return {
       ...dia,
-      fecha: `${yyyy}-${mm}-${dd}` // Formato YYYY-MM-DD para compatibilidad con la API
+      fecha: fechaFormateada
     };
   });
+  
+  return diasGenerados;
 };
 
 // Función para normalizar nombres de días (quitar acentos)

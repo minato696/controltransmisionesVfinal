@@ -1,11 +1,13 @@
 'use client';
 
 // src/components/transmisiones/ControlTransmisiones.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   DIAS_SEMANA, 
   obtenerFechasSemana,
-  normalizarDiaSemana
+  normalizarDiaSemana,
+  TIMEZONE,
+  getFechaActualPeru
 } from './constants';
 import { 
   TransmisionEditar, 
@@ -20,7 +22,8 @@ import {
   getReportesPorFechas,
   guardarOActualizarReporte
 } from '../../services/api-client';
-import { endOfWeek, startOfWeek, format } from 'date-fns';
+import { endOfWeek, startOfWeek, addDays, format as formatDateFns } from 'date-fns';
+import { toZonedTime, format as formatTz } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
 
 // Importamos los componentes
@@ -47,9 +50,22 @@ export default function ControlTransmisiones() {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reporteActual, setReporteActual] = useState<Reporte | null>(null);
+  
   // Estados para fechas y modo de selección
-  const [fechaInicio, setFechaInicio] = useState<Date>(new Date());
-  const [fechaFin, setFechaFin] = useState<Date>(endOfWeek(new Date(), { weekStartsOn: 1 }));
+  // Corregimos la inicialización de fechas usando la zona horaria de Perú
+  const [fechaInicio, setFechaInicio] = useState<Date>(() => {
+    const hoy = getFechaActualPeru();
+    // Asegurarnos de que la fecha de inicio sea el lunes de la semana
+    const inicio = startOfWeek(hoy, { weekStartsOn: 1 });
+    return inicio;
+  });
+  
+  const [fechaFin, setFechaFin] = useState<Date>(() => {
+    const hoy = getFechaActualPeru();
+    const fin = endOfWeek(hoy, { weekStartsOn: 1 });
+    return fin;
+  });
+  
   const [modoSeleccion, setModoSeleccion] = useState<'semana' | 'dia' | 'rango'>('semana');
   // Estado para alternar entre vista normal y resumen general
   const [mostrarResumen, setMostrarResumen] = useState<boolean>(true);
@@ -63,39 +79,43 @@ export default function ControlTransmisiones() {
 
   // Actualizar días de la semana cuando cambien las fechas o el modo
   useEffect(() => {
+    const fechaInicioPeru = toZonedTime(fechaInicio, TIMEZONE);
+    
     let fechasSemana: DiaSemana[] = [];
     
     if (modoSeleccion === 'semana') {
-      // En modo semana, obtener los 6 días (lunes a sábado)
+      // En modo semana, obtener los días usando fechaInicio como base
       fechasSemana = obtenerFechasSemana(fechaInicio);
     } else if (modoSeleccion === 'dia') {
       // En modo día, mostrar solo el día seleccionado
       const diaSeleccionado = fechaInicio;
-      const nombreDia = format(diaSeleccionado, 'EEEE', { locale: es });
+      const diaSeleccionadoPeru = toZonedTime(diaSeleccionado, TIMEZONE);
+      const nombreDia = formatTz(diaSeleccionadoPeru, 'EEEE', { timeZone: TIMEZONE, locale: es });
       
       // Capitalizar primera letra
       const nombreFormateado = nombreDia.charAt(0).toUpperCase() + nombreDia.slice(1);
       
       fechasSemana = [{
         nombre: nombreFormateado,
-        fecha: format(diaSeleccionado, 'yyyy-MM-dd')
+        fecha: formatTz(diaSeleccionadoPeru, 'yyyy-MM-dd', { timeZone: TIMEZONE })
       }];
     } else if (modoSeleccion === 'rango') {
       // En modo rango, generar todos los días entre fechaInicio y fechaFin
       const dias: DiaSemana[] = [];
-      const fechaActual = new Date(fechaInicio);
+      let fechaActual = new Date(fechaInicio);
       
       while (fechaActual <= fechaFin) {
-        const nombreDia = format(fechaActual, 'EEEE', { locale: es });
+        const fechaActualPeru = toZonedTime(fechaActual, TIMEZONE);
+        const nombreDia = formatTz(fechaActualPeru, 'EEEE', { timeZone: TIMEZONE, locale: es });
         const nombreFormateado = nombreDia.charAt(0).toUpperCase() + nombreDia.slice(1);
         
         dias.push({
           nombre: nombreFormateado,
-          fecha: format(fechaActual, 'yyyy-MM-dd')
+          fecha: formatTz(fechaActualPeru, 'yyyy-MM-dd', { timeZone: TIMEZONE })
         });
         
         // Avanzar al siguiente día
-        fechaActual.setDate(fechaActual.getDate() + 1);
+        fechaActual = addDays(fechaActual, 1);
       }
       
       fechasSemana = dias;
@@ -607,10 +627,11 @@ export default function ControlTransmisiones() {
                               Filial / Programa
                             </th>
                             {diasSemana.map((dia, idx) => {
-                              // Convertir la fecha de string a objeto Date
-                              const fechaDia = new Date(dia.fecha);
-                              // Formatear la fecha como DD/MM
-                              const fechaCorta = format(fechaDia, "dd/MM");
+                              // Crear un objeto Date a partir de la cadena de fecha
+                              const fechaDia = new Date(dia.fecha + 'T00:00:00');
+                              // Formatear explícitamente la fecha como DD/MM
+                              const fechaCorta = fechaDia.getDate().toString().padStart(2, '0') + '/' + 
+                                              (fechaDia.getMonth() + 1).toString().padStart(2, '0');
                               
                               return (
                                 <th key={idx} scope="col" className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -687,7 +708,7 @@ export default function ControlTransmisiones() {
                   // Vista de reportes por rango (similar a la vista por día pero considerando todas las fechas)
                   <div className="p-6">
                     <h2 className="text-xl font-bold mb-4">
-                      Reportes del {format(fechaInicio, "d 'de' MMMM", { locale: es })} al {format(fechaFin, "d 'de' MMMM 'de' yyyy", { locale: es })}
+                      Reportes del {formatTz(toZonedTime(fechaInicio, TIMEZONE), "d 'de' MMMM", { timeZone: TIMEZONE, locale: es })} al {formatTz(toZonedTime(fechaFin, TIMEZONE), "d 'de' MMMM 'de' yyyy", { timeZone: TIMEZONE, locale: es })}
                     </h2>
                     
                     {reportes.length === 0 ? (
@@ -727,12 +748,13 @@ export default function ControlTransmisiones() {
                                 
                                 // Formatear fecha para mostrar
                                 const fechaFormateada = new Date(reporte.fecha);
+                                const fechaFormateadaPeru = toZonedTime(fechaFormateada, TIMEZONE);
                                 
                                 return (
                                   <tr key={reporte.id_reporte}>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                       <div className="text-sm text-gray-900">
-                                        {format(fechaFormateada, "EEE d MMM", { locale: es })}
+                                        {formatTz(fechaFormateadaPeru, "EEE d MMM", { timeZone: TIMEZONE, locale: es })}
                                       </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
@@ -759,7 +781,7 @@ export default function ControlTransmisiones() {
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                       <button
                                         onClick={() => {
-                                          const dia = format(fechaFormateada, "EEEE", { locale: es });
+                                          const dia = formatTz(fechaFormateadaPeru, "EEEE", { timeZone: TIMEZONE, locale: es });
                                           const diaFormateado = dia.charAt(0).toUpperCase() + dia.slice(1);
                                           abrirFormulario(
                                             reporte.filialId,
