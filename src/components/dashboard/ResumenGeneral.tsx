@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { format, startOfWeek, endOfWeek, addDays, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useRouter } from 'next/navigation';
@@ -24,56 +24,17 @@ export default function DashboardGeneral() {
   const [fechaFin, setFechaFin] = useState<Date>(endOfWeek(new Date(), { weekStartsOn: 1 }));
   const [diasSemana, setDiasSemana] = useState<string[]>([]);
   const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [filialSeleccionada, setFilialSeleccionada] = useState<number | null>(null);
   const [authReady, setAuthReady] = useState(false);
-  
-  // Manejar scroll en dispositivos móviles
-  const [sidebarVisible, setSidebarVisible] = useState(false);
 
   // Obtener estado de autenticación
   const { isAuthenticated } = useAuth();
   const router = useRouter();
 
-  // Verificar que la autenticación esté lista
-  useEffect(() => {
-    if (isAuthenticated) {
-      setAuthReady(true);
-    } else {
-      // Pequeño timeout para asegurar que el contexto de autenticación se ha inicializado
-      const timer = setTimeout(() => {
-        setAuthReady(true);
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [isAuthenticated]);
-
-  // Cargar datos iniciales solo si está autenticado
-  useEffect(() => {
-    if (authReady && isAuthenticated) {
-      cargarDatos();
-    }
-  }, [authReady, isAuthenticated]);
-
-  // Generar días de la semana cuando cambian las fechas
-  useEffect(() => {
-    if (authReady && isAuthenticated) {
-      generarDiasSemana();
-    }
-  }, [fechaInicio, fechaFin, authReady, isAuthenticated]);
-
-  // Cargar reportes cuando cambian las fechas
-  useEffect(() => {
-    if (authReady && isAuthenticated && diasSemana.length > 0) {
-      cargarReportes();
-    }
-  }, [diasSemana, authReady, isAuthenticated]);
-
   // Función para cargar todos los datos necesarios
-  const cargarDatos = async () => {
+  const cargarDatos = useCallback(async () => {
     try {
       setCargando(true);
-      setError(null);
       
       // Cargar filiales y programas
       const [filialesData, programasData] = await Promise.all([
@@ -102,14 +63,13 @@ export default function DashboardGeneral() {
       
     } catch (err) {
       console.error('Error al cargar datos:', err);
-      setError('Error al cargar los datos. Por favor, intente nuevamente.');
     } finally {
       setCargando(false);
     }
-  };
+  }, []);
 
   // Generar array de días de la semana entre fechaInicio y fechaFin
-  const generarDiasSemana = () => {
+  const generarDiasSemana = useCallback(() => {
     const dias: string[] = [];
     let fechaActual = new Date(fechaInicio);
     
@@ -120,10 +80,10 @@ export default function DashboardGeneral() {
     }
     
     setDiasSemana(dias);
-  };
+  }, [fechaInicio, fechaFin]);
 
   // Cargar reportes para el rango de fechas
-  const cargarReportes = async () => {
+  const cargarReportes = useCallback(async () => {
     if (diasSemana.length === 0) return;
     
     try {
@@ -133,15 +93,48 @@ export default function DashboardGeneral() {
       const ultimoDia = diasSemana[diasSemana.length - 1];
       
       const reportesData = await getReportesPorFechas(primerDia, ultimoDia);
-      setReportes(reportesData);
+      setReportes(reportesData as Reporte[]);
       
     } catch (err) {
       console.error('Error al cargar reportes:', err);
-      setError('Error al cargar los reportes. Por favor, intente nuevamente.');
     } finally {
       setCargando(false);
     }
-  };
+  }, [diasSemana]);
+
+  // Verificar que la autenticación esté lista
+  useEffect(() => {
+    if (isAuthenticated) {
+      setAuthReady(true);
+    } else {
+      // Pequeño timeout para asegurar que el contexto de autenticación se ha inicializado
+      const timer = setTimeout(() => {
+        setAuthReady(true);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isAuthenticated]);
+
+  // Cargar datos iniciales solo si está autenticado
+  useEffect(() => {
+    if (authReady && isAuthenticated) {
+      cargarDatos();
+    }
+  }, [authReady, isAuthenticated, cargarDatos]);
+
+  // Generar días de la semana cuando cambian las fechas
+  useEffect(() => {
+    if (authReady && isAuthenticated) {
+      generarDiasSemana();
+    }
+  }, [fechaInicio, fechaFin, authReady, isAuthenticated, generarDiasSemana]);
+
+  // Cargar reportes cuando cambian las fechas
+  useEffect(() => {
+    if (authReady && isAuthenticated && diasSemana.length > 0) {
+      cargarReportes();
+    }
+  }, [diasSemana, authReady, isAuthenticated, cargarReportes]);
 
   // Manejar cambio en el rango de fechas
   const handleFechasChange = (inicio: Date, fin: Date) => {
@@ -220,8 +213,6 @@ export default function DashboardGeneral() {
   const reportesSi = reportes.filter(r => r.estado === 'si').length;
   const reportesNo = reportes.filter(r => r.estado === 'no').length;
   const reportesTarde = reportes.filter(r => r.estado === 'tarde').length;
-  const reportesPendientes = reportes.filter(r => !r.estado || r.estado === 'pendiente').length;
-  const efectividad = totalReportes > 0 ? Math.round((reportesSi / totalReportes) * 100) : 0;
   
   // Si no está autenticado, mostrar mensaje para que inicie sesión
   if (authReady && !isAuthenticated) {

@@ -1,21 +1,24 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { ProgramaWithRelations } from '@/types/prisma-extensions';
+
+interface RouteParams {
+  params: Promise<{ id: string }>;
+}
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  context: RouteParams
 ) {
   try {
-    // Asegurarse de que params.id sea seguro de usar
-    const id = parseInt(params.id);
+    const { id } = await context.params;
+    const numericId = parseInt(id);
     
-    if (isNaN(id)) {
+    if (isNaN(numericId)) {
       return NextResponse.json({ error: 'ID de programa inválido' }, { status: 400 });
     }
 
     const programa = await prisma.programa.findUnique({
-      where: { id },
+      where: { id: numericId },
       include: {
         filiales: {
           include: {
@@ -54,27 +57,28 @@ export async function GET(
     
     return NextResponse.json(transformedPrograma);
   } catch (error) {
-    console.error(`Error al obtener programa con ID ${params.id}:`, error);
+    console.error(`Error al obtener programa:`, error);
     return NextResponse.json({ error: 'Error al obtener programa' }, { status: 500 });
   }
 }
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  context: RouteParams
 ) {
   try {
-    const id = parseInt(params.id);
+    const { id } = await context.params;
+    const numericId = parseInt(id);
     const body = await request.json();
     
     // Validar ID
-    if (isNaN(id)) {
+    if (isNaN(numericId)) {
       return NextResponse.json({ error: 'ID de programa inválido' }, { status: 400 });
     }
     
     // Verificar si el programa existe
     const existePrograma = await prisma.programa.findUnique({
-      where: { id }
+      where: { id: numericId }
     });
     
     if (!existePrograma) {
@@ -82,8 +86,8 @@ export async function PUT(
     }
     
     // Actualizar programa básico
-    const updatedPrograma = await prisma.programa.update({
-      where: { id },
+    await prisma.programa.update({
+      where: { id: numericId },
       data: {
         nombre: body.nombre,
         descripcion: body.descripcion,
@@ -108,7 +112,7 @@ export async function PUT(
       if (diasSemana.length > 0) {
         // Eliminar relaciones existentes
         await prisma.programaDia.deleteMany({
-          where: { programaId: id }
+          where: { programaId: numericId }
         });
         
         // Crear nuevas relaciones
@@ -116,7 +120,7 @@ export async function PUT(
           diasSemana.map((dia: { id: number }) => 
             prisma.programaDia.create({
               data: {
-                programaId: id,
+                programaId: numericId,
                 diaSemanaId: dia.id
               }
             })
@@ -129,7 +133,7 @@ export async function PUT(
     if (body.filialIds && body.filialIds.length > 0) {
       // Eliminar relaciones existentes
       await prisma.filialPrograma.deleteMany({
-        where: { programaId: id }
+        where: { programaId: numericId }
       });
       
       // Crear nuevas relaciones
@@ -137,7 +141,7 @@ export async function PUT(
         body.filialIds.map((filialId: number) => 
           prisma.filialPrograma.create({
             data: {
-              programaId: id,
+              programaId: numericId,
               filialId
             }
           })
@@ -147,7 +151,7 @@ export async function PUT(
     
     // Obtener programa actualizado con relaciones
     const programaCompleto = await prisma.programa.findUnique({
-      where: { id },
+      where: { id: numericId },
       include: {
         filiales: {
           include: {
@@ -161,6 +165,10 @@ export async function PUT(
         }
       }
     });
+    
+    if (!programaCompleto) {
+      return NextResponse.json({ error: 'Error al obtener programa actualizado' }, { status: 500 });
+    }
     
     // Transformar para respuesta
     const transformedPrograma = {
@@ -182,26 +190,27 @@ export async function PUT(
     
     return NextResponse.json(transformedPrograma);
   } catch (error) {
-    console.error(`Error al actualizar programa con ID ${params.id}:`, error);
+    console.error(`Error al actualizar programa:`, error);
     return NextResponse.json({ error: 'Error al actualizar programa' }, { status: 500 });
   }
 }
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  context: RouteParams
 ) {
   try {
-    const id = parseInt(params.id);
+    const { id } = await context.params;
+    const numericId = parseInt(id);
     
     // Validar ID
-    if (isNaN(id)) {
+    if (isNaN(numericId)) {
       return NextResponse.json({ error: 'ID de programa inválido' }, { status: 400 });
     }
     
     // Verificar si el programa existe
     const existePrograma = await prisma.programa.findUnique({
-      where: { id }
+      where: { id: numericId }
     });
     
     if (!existePrograma) {
@@ -211,12 +220,12 @@ export async function DELETE(
     // Eliminar programa
     // Las relaciones se eliminarán automáticamente gracias a onDelete: Cascade
     await prisma.programa.delete({
-      where: { id }
+      where: { id: numericId }
     });
     
     return new Response(null, { status: 204 });
   } catch (error) {
-    console.error(`Error al eliminar programa con ID ${params.id}:`, error);
+    console.error(`Error al eliminar programa:`, error);
     return NextResponse.json({ error: 'Error al eliminar programa' }, { status: 500 });
   }
 }

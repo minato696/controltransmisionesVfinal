@@ -3,11 +3,17 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
+interface DbData {
+  diasSemana?: unknown[];
+  estados?: unknown[];
+  targets?: unknown[];
+}
+
 export default function DbInitializer() {
   const [status, setStatus] = useState<'loading' | 'initialized' | 'error' | 'not-initialized'>('loading');
   const [message, setMessage] = useState<string>('Comprobando estado de la base de datos...');
   const [initializing, setInitializing] = useState<boolean>(false);
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<DbData | null>(null);
 
   // Verificar el estado de inicialización al cargar
   useEffect(() => {

@@ -30,7 +30,8 @@ const VistaReportesDiaSemanalStyle: React.FC<VistaReportesDiaSemanalStyleProps> 
   const fechaCorta = format(fecha, 'yyyy-MM-dd');
 
   // Filtrar reportes para el día seleccionado
-  let reportesDelDia = reportes.filter(r => r.fecha === fechaFormateada);
+  const reportesDelDia = reportes.filter(r => r.fecha === fechaFormateada);
+
 
   // Obtener el reporte específico para una filial y programa
   const getReporte = (filialId: number, programaId: number): Reporte | null => {

@@ -7,12 +7,6 @@ export function middleware(request: NextRequest) {
   // Lista de rutas públicas que no requieren autenticación
   const publicPaths = ['/login'];
   
-  // Verificar si la ruta actual es pública
-  const isPublicPath = publicPaths.some(path => 
-    request.nextUrl.pathname === path || 
-    request.nextUrl.pathname.startsWith(`${path}/`)
-  );
-  
   // Verificar si es la ruta principal con el parámetro de dashboard
   const isDashboardView = 
     request.nextUrl.pathname === '/' && 

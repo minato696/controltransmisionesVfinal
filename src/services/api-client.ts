@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { Filial, FilialInput } from '@/app/types/filial';
 import { Programa, ProgramaInput } from '@/app/types/programa';
+import { Reporte } from '@/components/transmisiones/types';
 
 // Configuración base
 const API_BASE_URL = '/api';
@@ -69,9 +70,9 @@ export async function getProgramasByFilial(filialId: string | number): Promise<P
 }
 
 // REPORTES API
-export async function getReportesPorFechas(fechaInicio: string, fechaFin: string): Promise<any[]> {
-  const response = await api.get<any[]>(`/reportes/rango?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`);
-  return response.data;
+export async function getReportesPorFechas(fechaInicio: string, fechaFin: string): Promise<Reporte[]> {
+  const response = await api.get<Reporte[]>(`/reportes/rango?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`);
+  return response.data as Reporte[];
 }
 
 /**
@@ -86,10 +87,10 @@ export async function guardarOActualizarReporte(
   filialId: number, 
   programaId: number, 
   fecha: string, 
-  datosReporte: any
-): Promise<any> {
+  datosReporte: Record<string, unknown>
+): Promise<unknown> {
   try {
-    const reporteCompleto = {
+    const reporteCompleto: Record<string, unknown> = {
       ...datosReporte,
       filialId,
       programaId,
@@ -114,7 +115,7 @@ export async function guardarOActualizarReporte(
 }
 
 // FUNCIONES DE TRANSFORMACIÓN
-export function convertirFechaASwagger(fechaInput: any): string {
+export function convertirFechaASwagger(fechaInput: unknown): string {
   if (!fechaInput) {
     const hoy = new Date();
     return hoy.toISOString().split('T')[0]; // Formato YYYY-MM-DD
@@ -174,14 +175,15 @@ export async function createProgramasPorDias(datos: {
   horaInicio: string;
   isActivo: boolean;
   filialIds: number[];
-}): Promise<any> {
+}): Promise<unknown> {
   console.log('Enviando datos a la API:', datos);
   try {
-    const response = await api.post<any>(`/programas/por-dias`, datos);
+    const response = await api.post<unknown>(`/programas/por-dias`, datos);
     console.log('Respuesta de la API:', response.data);
     return response.data;
-  } catch (error: any) {
-    console.error('Error detallado:', error.response?.data || error.message);
+  } catch (error: unknown) {
+    const errorObj = error as { response?: { data?: unknown }; message?: string };
+    console.error('Error detallado:', errorObj.response?.data || errorObj.message);
     throw error;
   }
 }

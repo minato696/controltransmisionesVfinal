@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { ReporteWithRelations } from '@/app/types/reporte';
 
 export async function GET(request: Request) {
   try {
@@ -33,7 +32,7 @@ export async function GET(request: Request) {
     });
     
     // Transformar datos para el formato esperado por el frontend
-    const reportesTransformados = reportes.map((reporte: ReporteWithRelations) => ({
+    const reportesTransformados = reportes.map((reporte) => ({
       id_reporte: reporte.id,
       filialId: reporte.filialId,
       programaId: reporte.programaId,

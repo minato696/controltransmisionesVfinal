@@ -19,7 +19,7 @@ export const TransmisionTooltip: React.FC<TransmisionTooltipProps> = ({
 }) => {
   let bgColor = "bg-gray-200";
   let icon = "⏱";
-  let iconColor = "text-white";
+  const iconColor = "text-white";
   let showIcon = true;
   
   const estadoNormalizado = estado || ESTADOS_TRANSMISION.PENDIENTE;

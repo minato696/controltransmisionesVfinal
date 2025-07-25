@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useParams } from 'next/navigation';
 import { getFilial, updateFilial } from '@/app/api/filiales';
 import { Filial, FilialInput } from '@/app/types/filial';
 import FilialForm from '../../components/FilialForm';  // Asegúrate de que sea FilialForm
 
-export default function EditarFilialPage() {
+function PageContent() {
   const params = useParams();
   const filialId = params.id as string;
   
@@ -59,5 +59,13 @@ export default function EditarFilialPage() {
         isEditing={true} 
       />
     </div>
+  );
+}
+
+export default function EditarFilialPage() {
+  return (
+    <Suspense fallback={<div className="text-center p-4">Cargando...</div>}>
+      <PageContent />
+    </Suspense>
   );
 }

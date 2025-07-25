@@ -1,6 +1,19 @@
-// src/types/reporte.ts
-import { Filial } from '@/app/types/filial';
-import { Programa } from '@/app/types/programa';
+// Definir interfaces básicas sin importar de otros archivos
+export interface FilialBasic {
+  id: string | number;
+  nombre: string;
+  activa?: boolean;
+  isActivo?: boolean;
+}
+
+export interface ProgramaBasic {
+  id: string | number;
+  nombre: string;
+  descripcion?: string;
+  estado?: string;
+  horario?: string;
+  horaInicio?: string;
+}
 
 // Basic reporte interface
 export interface Reporte {
@@ -20,8 +33,8 @@ export interface Reporte {
 
 // Extended reporte interface with relations
 export interface ReporteWithRelations extends Reporte {
-  filial: Filial;
-  programa: Programa;
+  filial: FilialBasic;
+  programa: ProgramaBasic;
   estado: {
     id: number;
     nombre: string;

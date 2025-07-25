@@ -132,7 +132,8 @@ export default function ExportComponent({
     if (exportType === 'detallado' || modoDetallado) {
       filialesToShow.forEach((filial: Filial) => {
         // Obtener programas para esta filial
-        let programasFilial = programas.filter((p: Programa) => {
+          const programasFilial = programas.filter((p: Programa) => {
+
           // Verificar si el programa está asociado a la filial
           return p.filialesIds?.includes(Number(filial.id)) || 
                 Number(p.filialId) === Number(filial.id);

@@ -9,7 +9,7 @@ export interface Filial {
   fechaCreacion?: string;
   isActivo?: boolean;
   programaIds?: number[];
-  programas?: any[];
+  programas?: unknown[]; // Cambiar de any[] a unknown[]
   createdAt?: string;
   updatedAt?: string;
 }

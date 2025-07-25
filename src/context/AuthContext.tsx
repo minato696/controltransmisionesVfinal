@@ -40,10 +40,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setIsAuthenticated(true);
             setUser(authData.user);
           }
-        } catch (e) {
-          // Invalid stored data, clear it
-          localStorage.removeItem('auth');
-        }
+ } catch {
+  // Invalid stored data, clear it
+  localStorage.removeItem('auth');
+}
       }
       // Marcar como inicializado después de verificar localStorage
       setIsInitialized(true);

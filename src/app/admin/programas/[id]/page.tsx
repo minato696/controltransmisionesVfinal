@@ -17,7 +17,6 @@ export default function DetalleProgramaPage() {
   const programaId = params.id as string;
   
   const [programa, setPrograma] = useState<Programa | null>(null);
-  const [filial, setFilial] = useState<Filial | null>(null);
   const [filiales, setFiliales] = useState<Filial[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,10 +49,6 @@ export default function DetalleProgramaPage() {
         }
         
         setFiliales(filialesAsociadas);
-        if (filialesAsociadas.length > 0) {
-          setFilial(filialesAsociadas[0]); // Mantener compatibilidad
-        }
-        
         setLoading(false);
       } catch (err) {
         setError('Error al cargar los datos del programa');
@@ -128,13 +123,13 @@ export default function DetalleProgramaPage() {
                   <dd className="mt-1 text-sm text-gray-900">
                     {filiales.length > 0 ? (
                       <div className="space-y-1">
-                        {filiales.map((filial) => (
+                        {filiales.map((filialItem) => (
                           <Link 
-                            key={filial.id}
-                            href={`/admin/filiales/${filial.id}`}
+                            key={filialItem.id}
+                            href={`/admin/filiales/${filialItem.id}`}
                             className="text-blue-600 hover:underline block"
                           >
-                            {filial.nombre}
+                            {filialItem.nombre}
                           </Link>
                         ))}
                       </div>
@@ -186,13 +181,13 @@ export default function DetalleProgramaPage() {
                 {filiales.length > 0 && (
                   <div className="space-y-2">
                     <p className="text-sm font-medium text-gray-700">Ver filiales:</p>
-                    {filiales.map((filial) => (
+                    {filiales.map((filialItem) => (
                       <Link
-                        key={filial.id}
-                        href={`/admin/filiales/${filial.id}`}
+                        key={filialItem.id}
+                        href={`/admin/filiales/${filialItem.id}`}
                         className="block w-full text-center bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition-colors text-sm"
                       >
-                        {filial.nombre}
+                        {filialItem.nombre}
                       </Link>
                     ))}
                   </div>

@@ -158,10 +158,10 @@ const SelectorSemanasMejorado: React.FC<SelectorSemanasProps> = ({
     }
     
     // Agregar días del mes siguiente para completar la última semana
-    const diasRestantes = 7 - (dias.length % 7);
-    if (diasRestantes < 7) {
-      for (let i = 1; i <= diasRestantes; i++) {
-        const dia = new Date(año, mes + 1, i);
+const diasRestantes = 7 - (dias.length % 7);
+if (diasRestantes < 7) {
+  for (let i = 1; i <= diasRestantes; i++) {
+    const dia = new Date(año, mes + 1, i);
         dias.push({
           fecha: dia,
           esMesActual: false,

@@ -1,6 +1,6 @@
 // src/components/transmisiones/constants.ts
 import { DiaSemana } from './types';
-import { startOfWeek, addDays, format } from 'date-fns';
+import { startOfWeek, addDays } from 'date-fns';
 
 // Ya no necesitamos CIUDADES porque vendrán de la API (filiales)
 

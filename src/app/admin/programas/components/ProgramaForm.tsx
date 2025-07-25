@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Programa, ProgramaInput } from '@/app/types/programa';
 import { Filial } from '@/app/types/filial';
 import { getFiliales } from '@/app/api/filiales';
-import { createPrograma, updatePrograma } from '@/services/api-client';
 import axios from 'axios';
 
 interface ProgramaFormProps {
@@ -16,16 +15,17 @@ interface ProgramaFormProps {
 
 export default function ProgramaForm({ programa, onSubmit, isEditing = false }: ProgramaFormProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const preselectedFilialId = searchParams.get('filialId');
   
   // Estado para verificar si los días de la semana están inicializados
   const [diasInicializados, setDiasInicializados] = useState<boolean>(true);
   
+  // Estado para el ID de filial preseleccionada (obtenido de la URL)
+  const [preselectedFilialId, setPreselectedFilialId] = useState<string>('');
+  
   // Formulario simplificado con solo los campos necesarios para el backend
   const [formData, setFormData] = useState<ProgramaInput>({
     nombre: '',
-    filialId: preselectedFilialId || '',
+    filialId: '',
     estado: 'activo',
     diasSemana: ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES'],
     horaInicio: '08:00'
@@ -82,6 +82,16 @@ export default function ProgramaForm({ programa, onSubmit, isEditing = false }: 
   };
 
   useEffect(() => {
+    // Obtener filialId de la URL si existe
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const filialId = urlParams.get('filialId');
+      if (filialId) {
+        setPreselectedFilialId(filialId);
+        setFormData(prev => ({ ...prev, filialId }));
+      }
+    }
+
     // Verificar si los días de la semana están inicializados
     verificarDiasInicializados();
     
@@ -214,18 +224,19 @@ export default function ProgramaForm({ programa, onSubmit, isEditing = false }: 
       
       await onSubmit(datosPrograma);
       router.push('/admin/programas');
-    } catch (err: any) {
-      console.error('Error al guardar programa:', err);
-      
-      // Mostrar mensaje de error más específico si está disponible
-      if (err.response?.data?.message) {
-        setError(`Error: ${err.response.data.message}`);
-      } else if (err.response?.data) {
-        setError(`Error: ${JSON.stringify(err.response.data)}`);
-      } else {
-        setError('Error al guardar el programa. Por favor, verifique los datos e intente nuevamente.');
-      }
-    } finally {
+   } catch (err: unknown) {
+  console.error('Error al guardar programa:', err);
+  
+  // Mostrar mensaje de error más específico si está disponible
+  const error = err as { response?: { data?: { message?: string } } };
+  if (error.response?.data?.message) {
+    setError(`Error: ${error.response.data.message}`);
+  } else if (error.response?.data) {
+    setError(`Error: ${JSON.stringify(error.response.data)}`);
+  } else {
+    setError('Error al guardar el programa. Por favor, verifique los datos e intente nuevamente.');
+  }
+}finally {
       setLoading(false);
     }
   };

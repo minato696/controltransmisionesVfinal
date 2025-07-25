@@ -1,19 +1,24 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+interface RouteParams {
+  params: Promise<{ id: string }>;
+}
+
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  context: RouteParams
 ) {
   try {
-    const id = parseInt(params.id);
+    const { id } = await context.params;
+    const numericId = parseInt(id);
     
-    if (isNaN(id)) {
+    if (isNaN(numericId)) {
       return NextResponse.json({ error: 'ID de reporte inválido' }, { status: 400 });
     }
     
     const reporte = await prisma.reporte.findUnique({
-      where: { id },
+      where: { id: numericId },
       include: {
         filial: true,
         programa: true,
@@ -48,19 +53,20 @@ export async function GET(
     
     return NextResponse.json(reporteTransformado);
   } catch (error) {
-    console.error(`Error al obtener reporte con ID ${params.id}:`, error);
+    console.error(`Error al obtener reporte:`, error);
     return NextResponse.json({ error: 'Error al obtener reporte' }, { status: 500 });
   }
 }
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  context: RouteParams
 ) {
   try {
-    const id = parseInt(params.id);
+    const { id } = await context.params;
+    const numericId = parseInt(id);
     
-    if (isNaN(id)) {
+    if (isNaN(numericId)) {
       return NextResponse.json({ error: 'ID de reporte inválido' }, { status: 400 });
     }
     
@@ -69,7 +75,7 @@ export async function PUT(
     
     // Verificar si el reporte existe
     const reporteExistente = await prisma.reporte.findUnique({
-      where: { id }
+      where: { id: numericId }
     });
     
     if (!reporteExistente) {
@@ -121,7 +127,7 @@ export async function PUT(
     }
     
     // Datos para actualizar
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     
     if (estadoId) updateData.estadoId = estadoId;
     
@@ -155,7 +161,7 @@ export async function PUT(
     
     // Actualizar reporte
     const reporte = await prisma.reporte.update({
-      where: { id },
+      where: { id: numericId },
       data: updateData,
       include: {
         filial: true,
@@ -189,25 +195,26 @@ export async function PUT(
     
     return NextResponse.json(reporteTransformado);
   } catch (error) {
-    console.error(`Error al actualizar reporte con ID ${params.id}:`, error);
+    console.error(`Error al actualizar reporte:`, error);
     return NextResponse.json({ error: 'Error al actualizar reporte' }, { status: 500 });
   }
 }
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  context: RouteParams
 ) {
   try {
-    const id = parseInt(params.id);
+    const { id } = await context.params;
+    const numericId = parseInt(id);
     
-    if (isNaN(id)) {
+    if (isNaN(numericId)) {
       return NextResponse.json({ error: 'ID de reporte inválido' }, { status: 400 });
     }
     
     // Verificar si el reporte existe
     const reporteExistente = await prisma.reporte.findUnique({
-      where: { id }
+      where: { id: numericId }
     });
     
     if (!reporteExistente) {
@@ -216,12 +223,12 @@ export async function DELETE(
     
     // Eliminar reporte
     await prisma.reporte.delete({
-      where: { id }
+      where: { id: numericId }
     });
     
     return new Response(null, { status: 204 });
   } catch (error) {
-    console.error(`Error al eliminar reporte con ID ${params.id}:`, error);
+    console.error(`Error al eliminar reporte:`, error);
     return NextResponse.json({ error: 'Error al eliminar reporte' }, { status: 500 });
   }
 }

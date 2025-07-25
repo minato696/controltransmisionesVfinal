@@ -83,7 +83,7 @@ export default function ControlTransmisiones() {
     } else if (modoSeleccion === 'rango') {
       // En modo rango, generar todos los días entre fechaInicio y fechaFin
       const dias: DiaSemana[] = [];
-      let fechaActual = new Date(fechaInicio);
+      const fechaActual = new Date(fechaInicio);
       
       while (fechaActual <= fechaFin) {
         const nombreDia = format(fechaActual, 'EEEE', { locale: es });
@@ -331,7 +331,7 @@ export default function ControlTransmisiones() {
       setError(null);
       
       // Preparar datos del reporte
-      const datosReporte: any = {
+      const datosReporte: Record<string, unknown> = {
         filialId: transmisionEditar.filialId,
         programaId: transmisionEditar.programaId,
         fecha: transmisionEditar.fecha,

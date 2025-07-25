@@ -5,7 +5,7 @@
 const axios = require('axios');
 
 // URL base para la API
-const API_URL = 'http://localhost:5885/api';
+const API_URL = 'http://localhost:3000/api';
 
 // Lista de programas a crear
 const programas = [

@@ -1,23 +1,10 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
-// Componente de carga para Suspense
-function Loading() {
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-        <p className="mt-4 text-gray-600">Cargando...</p>
-      </div>
-    </div>
-  );
-}
-
-// Componente principal envuelto en Suspense
-function LoginPage() {
+export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -157,14 +144,5 @@ function LoginPage() {
         </div>
       </div>
     </div>
-  );
-}
-
-// Exportación del componente principal envuelto en Suspense
-export default function Page() {
-  return (
-    <Suspense fallback={<Loading />}>
-      <LoginPage />
-    </Suspense>
   );
 }

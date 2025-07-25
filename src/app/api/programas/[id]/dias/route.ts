@@ -2,12 +2,17 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { DiaSemanaDB } from '@/types/prisma-extensions';
 
+interface RouteParams {
+  params: Promise<{ id: string }>;
+}
+
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  context: RouteParams
 ) {
   try {
-    const programaId = parseInt(params.id);
+    const { id } = await context.params;
+    const programaId = parseInt(id);
     const { diasSemana } = await request.json();
     
     // Verificar que el programa existe
@@ -47,7 +52,7 @@ export async function POST(
     
     return NextResponse.json(nuevosProgDias);
   } catch (error) {
-    console.error(`Error al actualizar días para programa ${params.id}:`, error);
+    console.error(`Error al actualizar días para programa:`, error);
     return NextResponse.json({ error: 'Error al actualizar días del programa' }, { status: 500 });
   }
 }
